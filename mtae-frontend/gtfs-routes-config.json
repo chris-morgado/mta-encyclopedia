@@ -1,7 +1,7 @@
 {
   "agencies": [
     {
-      "agencyKey": "mta-subway",
+      "agencyKey": "mta-routes",
       "path": "./gtfs_subway.zip"
     }
   ],

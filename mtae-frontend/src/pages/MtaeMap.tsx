@@ -21,39 +21,15 @@ export default function MtaeMap() {
 		});
 
 		/* Looks like this when its pulled
-		"type":"FeatureCollection",
-		"features":[
-			{
-				"type":"Feature",
-				"properties":{
-					"agency_name":"MTA New York City Transit",
-					"route_id":"A",
-					"agency_id":"MTA NYCT",
-					"route_short_name":"A",
-					"route_long_name":"8 Avenue Express",
-					"route_desc":"Trains operate between Inwood-207 St, Manhattan and Far Rockaway-Mott Av, Queens at all times. Also, from about 6 AM until about midnight, additional trains operate between Inwood-207 St and Ozone Park-Lefferts Blvd (trains typically alternate between Ozone Park and Far Rockaway). During weekday morning rush hours, special trains operate from Rockaway Park-Beach 116 St, Queens, toward Manhattan. These trains make local stops in Queens between Rockaway Park and Broad Channel. Similarly, in the evening, rush hour special trains leave Manhattan operating toward Rockaway Park-Beach 116 St.",
-					"route_type":1,
-					"route_url":"https://www.mta.info/schedules/subway/a-train",
-					"route_color":"#0062CF",
-					"route_text_color":"#FFFFFF",
-					"route_sort_order":1
-				},
-				"geometry":{
-					"type":"MultiLineString",
-					"coordinates":[
-					[
-						[
-							-73.828374,
-							40.685666
-						],
-				...
+		Routes: route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,geometry
+		Stops: 
 		**/
 		map.on("load", async () => {
-			const subwayData = await fetch("/data/mta-subway.geojson").then(res => res.json());
+			const routeData = await fetch("/data/mta-routes.geojson").then(res => res.json());
 
 			const allRoutes = Array.from(
 				new Set(
-					subwayData.features
+					routeData.features
 						.map((f: any) => (f.properties?.route_short_name || f.properties?.route_id) + " " + (f.properties?.route_color || "??"))
 						.filter(Boolean)
 				)
@@ -63,7 +39,7 @@ export default function MtaeMap() {
 
 			map.addSource("subway-lines", {
 				type: "geojson",
-				data: subwayData,
+				data: routeData,
 			});
 
 			map.addLayer({
@@ -77,6 +53,27 @@ export default function MtaeMap() {
 						["has", "route_color"],
 						["get", "route_color"], "#000000" // fallback is black
 					]
+				}
+			});
+
+			const stopData = await fetch("/data/mta-stops.geojson").then(res => res.json());
+			console.log("Line example:", routeData.features[0].properties);
+			console.log("Stop example:", stopData.features[0].properties);
+
+			map.addSource("subway-stops", {
+				type: "geojson",
+				data: stopData
+			});
+
+			map.addLayer({
+				id: "subway-stops-layer",
+				type: "circle",
+				source: "subway-stops",
+				paint: {
+					"circle-radius": 3,
+					"circle-color": "#ffffff",
+					"circle-stroke-width": 1.5,
+					"circle-stroke-color": "#000000"
 				}
 			});
 

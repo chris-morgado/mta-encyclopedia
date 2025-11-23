@@ -1,0 +1,11 @@
+{
+  "agencies": [
+    {
+      "agencyKey": "mta-stops",
+      "path": "./gtfs_subway.zip"
+    }
+  ],
+  "outputType": "agency",
+  "outputFormat": "stops",
+  "verbose": true
+}
