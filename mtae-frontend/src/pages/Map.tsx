@@ -21,7 +21,7 @@ export default function Map() {
                 {/* MapTiler Streets */}
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors & MapTiler'
-                    url={`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${maptilerApiKey}`}
+                    url={`https://api.maptiler.com/maps/019ab24d-c7c5-7f0a-a22d-0a5b92404e5c/style.json?key=${maptilerApiKey}`}
                 />
                 <Marker position={[40.7128, -74.006]}>
                     <Popup>New York City</Popup>
