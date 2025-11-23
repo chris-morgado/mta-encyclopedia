@@ -22,6 +22,23 @@ export default function MtaeMap() {
 		});
 
 		map.on("load", async () => {
+			const subwayData = await fetch("/data/mta-subway.geojson").then(res => res.json());
+
+			map.addSource("subway-lines", {
+				type: "geojson",
+				data: subwayData,
+			});
+
+			map.addLayer({
+				id: "subway-lines",
+				type: "line",
+				source: "subway-lines",
+				paint: {
+					"line-color": "#c90000ff",
+					"line-width": 2,
+				},
+			});
+
 			const boroughData: FeatureCollection = await fetch(
 				"https://raw.githubusercontent.com/dwillis/nyc-maps/master/boroughs.geojson"
 			).then(res => res.json());
