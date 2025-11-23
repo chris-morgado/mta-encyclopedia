@@ -8,6 +8,7 @@ const MAP_STYLE = `https://api.maptiler.com/maps/${MAP_ID}/style.json?key=${API_
 export default function MtaeMap() {
 	const mapContainer = useRef<HTMLDivElement | null>(null);
 	const mapInstance = useRef<maptilersdk.Map | null>(null);
+	const popupRef = useRef<maptilersdk.Popup | null>(null);
 
 	useEffect(() => {
 		if (!mapContainer.current || mapInstance.current) return;
@@ -22,7 +23,8 @@ export default function MtaeMap() {
 
 		/* Looks like this when its pulled
 		Routes: route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,geometry
-		Stops: 
+		Stops: "stop_id""stop_name""parent_station""routes""agency_name"
+}
 		**/
 		map.on("load", async () => {
 			const routeData = await fetch("/data/mta-routes.geojson").then(res => res.json());
@@ -101,6 +103,54 @@ export default function MtaeMap() {
 				}
 			});
 
+			map.on("mouseenter", "subway-stops-layer", () => {
+				map.getCanvas().style.cursor = "pointer";
+			});
+
+			map.on("mouseleave", "subway-stops-layer", () => {
+				map.getCanvas().style.cursor = "";
+			});
+
+			map.on("click", "subway-stops-layer", (e) => {
+				const feature = e.features?.[0];
+				if (!feature) return;
+
+				const props = feature.properties as any;
+
+				const stop_name = props.stop_name;
+				const stop_id = props.stop_id;
+				const parent_station = props.parent_station;
+				const routes = props.routes; 
+				const agency_name = props.agency_name;
+
+				if (popupRef.current) {
+					// only 1 pop up can be open at a time, this closes the previous 
+					popupRef.current.remove();
+				}
+
+				const coordinates = (feature.geometry as any).coordinates;
+
+				const html = `
+					<div style="font-family: system-ui, sans-serif; font-size: 12px;">
+						<h3 style="margin: 0 0 4px; font-size: 14px;">${stop_name}</h3>
+						<div><strong>Stop ID:</strong> ${stop_id}</div>
+						<div><strong>Parent station:</strong> ${parent_station || "-"}</div>
+						<div><strong>Routes:</strong> ${routes || "-"}</div>
+						<div><strong>Agency:</strong> ${agency_name}</div>
+					</div>
+				`;
+
+				const popup = new maptilersdk.Popup({
+					closeButton: true,
+					closeOnClick: true,
+					offset: 8
+				})
+					.setLngLat(coordinates as [number, number])
+					.setHTML(html)
+					.addTo(map);
+
+				popupRef.current = popup;
+			});
 		});
 
 		mapInstance.current = map;
