@@ -1,12 +1,12 @@
 import { Routes, Route } from 'react-router-dom'
 import './App.css'
-import Map from './pages/Map.tsx'
+import MtaeMap from './pages/MtaeMap.tsx'
 
 function App() {
   return (
     <>
       <Routes>
-        <Route path="/map" element={<Map />} />
+        <Route path="/map" element={<MtaeMap />} />
       </Routes>
     </>
   )
