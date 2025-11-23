@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
-import type { FeatureCollection, Feature } from "geojson";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -16,13 +15,51 @@ export default function MtaeMap() {
 		const map = new maptilersdk.Map({
 			container: mapContainer.current,
 			style: MAP_STYLE,
-			center: [-73.82, 40.73],	// center more on Queens
+			center: [-74.006, 40.7128],
 			zoom: 10,
 			projection: "globe",
 		});
 
+		/* Looks like this when its pulled
+		"type":"FeatureCollection",
+		"features":[
+			{
+				"type":"Feature",
+				"properties":{
+					"agency_name":"MTA New York City Transit",
+					"route_id":"A",
+					"agency_id":"MTA NYCT",
+					"route_short_name":"A",
+					"route_long_name":"8 Avenue Express",
+					"route_desc":"Trains operate between Inwood-207 St, Manhattan and Far Rockaway-Mott Av, Queens at all times. Also, from about 6 AM until about midnight, additional trains operate between Inwood-207 St and Ozone Park-Lefferts Blvd (trains typically alternate between Ozone Park and Far Rockaway). During weekday morning rush hours, special trains operate from Rockaway Park-Beach 116 St, Queens, toward Manhattan. These trains make local stops in Queens between Rockaway Park and Broad Channel. Similarly, in the evening, rush hour special trains leave Manhattan operating toward Rockaway Park-Beach 116 St.",
+					"route_type":1,
+					"route_url":"https://www.mta.info/schedules/subway/a-train",
+					"route_color":"#0062CF",
+					"route_text_color":"#FFFFFF",
+					"route_sort_order":1
+				},
+				"geometry":{
+					"type":"MultiLineString",
+					"coordinates":[
+					[
+						[
+							-73.828374,
+							40.685666
+						],
+				...
+		**/
 		map.on("load", async () => {
 			const subwayData = await fetch("/data/mta-subway.geojson").then(res => res.json());
+
+			const allRoutes = Array.from(
+				new Set(
+					subwayData.features
+						.map((f: any) => (f.properties?.route_short_name || f.properties?.route_id) + " " + (f.properties?.route_color || "??"))
+						.filter(Boolean)
+				)
+			).sort();
+
+			console.log("Subway routes:", allRoutes);
 
 			map.addSource("subway-lines", {
 				type: "geojson",
@@ -30,15 +67,35 @@ export default function MtaeMap() {
 			});
 
 			map.addLayer({
-				id: "subway-lines",
+				id: "subway-colored-lines",
 				type: "line",
 				source: "subway-lines",
 				paint: {
-					"line-color": "#c90000ff",
-					"line-width": 2,
-				},
+					"line-width": 3,
+					"line-color": [
+						"case",
+						["has", "route_color"],
+						["get", "route_color"], "#000000" // fallback is black
+					]
+				}
 			});
 
+		});
+
+		mapInstance.current = map;
+
+		return () => {
+			map.remove();
+			mapInstance.current = null;
+		};
+	}, []);
+
+	return <div ref={mapContainer} className="map-root" />;
+}
+
+
+/*
+Borough code:
 			const boroughData: FeatureCollection = await fetch(
 				"https://raw.githubusercontent.com/dwillis/nyc-maps/master/boroughs.geojson"
 			).then(res => res.json());
@@ -95,20 +152,4 @@ export default function MtaeMap() {
 					"line-width": 2,
 				},
 			});
-
-		});
-
-		new maptilersdk.Marker()
-			.setLngLat([-74.006, 40.7128])
-			.addTo(map);
-
-		mapInstance.current = map;
-
-		return () => {
-			map.remove();
-			mapInstance.current = null;
-		};
-	}, []);
-
-	return <div ref={mapContainer} className="map-root" />;
-}
+**/
