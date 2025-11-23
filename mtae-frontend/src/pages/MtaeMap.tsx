@@ -47,7 +47,15 @@ export default function MtaeMap() {
 				type: "line",
 				source: "subway-lines",
 				paint: {
-					"line-width": 3,
+					"line-width": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						4, 0,
+						6, 1,  
+						10, 3,   
+						16, 5 
+					],
 					"line-color": [
 						"case",
 						["has", "route_color"],
@@ -70,9 +78,25 @@ export default function MtaeMap() {
 				type: "circle",
 				source: "subway-stops",
 				paint: {
-					"circle-radius": 3,
+					"circle-radius": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						8, 0,  // at zoom 8 (far away), disappear
+						10, 3,   
+						12, 4,   // at zoom 12, radius 4
+						14, 5,  
+						16, 7   // at zoom 7, radius 10
+					],
 					"circle-color": "#ffffff",
-					"circle-stroke-width": 1.5,
+					"circle-stroke-width": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						6, 0,  
+						10, 1.0,   
+						16, 1.5   
+					],
 					"circle-stroke-color": "#000000"
 				}
 			});
