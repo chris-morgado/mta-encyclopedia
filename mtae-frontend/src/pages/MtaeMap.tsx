@@ -5,6 +5,7 @@ import { StopPopup } from "../components/StopPopup";
 import type { StopProps } from "../types/stop";
 import type { Root } from "react-dom/client";
 import { fetchStopsGeoJson } from "../data/stops";
+import { fetchRoutesGeoJson } from "../data/routes";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -34,17 +35,7 @@ export default function MtaeMap() {
 
 		**/
 		map.on("load", async () => {
-			const routeData = await fetch("/data/mta-routes.geojson").then(res => res.json());
-
-			const allRoutes = Array.from(
-				new Set(
-					routeData.features
-						.map((f: any) => (f.properties?.route_short_name || f.properties?.route_id) + " " + (f.properties?.route_color || "??"))
-						.filter(Boolean)
-				)
-			).sort();
-
-			console.log("Subway routes:", allRoutes);
+			const routeData = await fetchRoutesGeoJson();
 
 			map.addSource("subway-lines", {
 				type: "geojson",
@@ -62,8 +53,8 @@ export default function MtaeMap() {
 						["zoom"],
 						4, 0,
 						6, 1,  
-						10, 3,   
-						16, 5 
+						16, 3,   
+						20, 7
 					],
 					"line-color": [
 						"case",
@@ -92,10 +83,9 @@ export default function MtaeMap() {
 						["linear"],
 						["zoom"],
 						8, 0,  // at zoom 8 (far away), disappear
-						10, 3,   
-						12, 4,   // at zoom 12, radius 4
-						14, 5,  
-						16, 7   // at zoom 7, radius 10
+						10, 2, // at zoom 10, radius 2
+						16, 5,   // at zoom 7, radius 10
+						20, 10
 					],
 					"circle-color": "#ffffff",
 					"circle-stroke-width": [
@@ -104,7 +94,8 @@ export default function MtaeMap() {
 						["zoom"],
 						6, 0,  
 						10, 1.0,   
-						16, 1.5   
+						16, 1.5,   
+						20, 2.5
 					],
 					"circle-stroke-color": "#000000"
 				}
