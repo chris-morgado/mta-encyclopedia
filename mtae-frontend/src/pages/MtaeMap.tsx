@@ -1,5 +1,9 @@
 import { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
+import { createRoot } from "react-dom/client";
+import { StopPopup } from "../components/StopPopup";
+import type { StopProps } from "../components/StopPopup";
+import type { Root } from "react-dom/client";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -9,6 +13,8 @@ export default function MtaeMap() {
 	const mapContainer = useRef<HTMLDivElement | null>(null);
 	const mapInstance = useRef<maptilersdk.Map | null>(null);
 	const popupRef = useRef<maptilersdk.Popup | null>(null);
+	const popupRootRef = useRef<Root | null>(null);
+	const popupContainerRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		if (!mapContainer.current || mapInstance.current) return;
@@ -24,7 +30,6 @@ export default function MtaeMap() {
 		/* Looks like this when its pulled
 		Routes: route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,geometry
 		Stops: "stop_id""stop_name""parent_station""routes""agency_name"
-}
 		**/
 		map.on("load", async () => {
 			const routeData = await fetch("/data/mta-routes.geojson").then(res => res.json());
@@ -116,46 +121,56 @@ export default function MtaeMap() {
 				if (!feature) return;
 
 				const props = feature.properties as any;
-
-				const stop_name = props.stop_name;
-				const stop_id = props.stop_id;
-				const parent_station = props.parent_station;
-				const routes = props.routes; 
-				const agency_name = props.agency_name;
-
-				if (popupRef.current) {
-					// only 1 pop up can be open at a time, this closes the previous 
-					popupRef.current.remove();
+				let routes: StopProps["routes"];
+				try {
+					routes = typeof props.routes === "string"
+						? JSON.parse(props.routes)
+						: props.routes;
+				} catch {
+					routes = undefined;
 				}
 
-				const coordinates = (feature.geometry as any).coordinates;
+				const stop: StopProps = {
+					stop_id: props.stop_id,
+					stop_name: props.stop_name,
+					parent_station: props.parent_station,
+					routes,
+				};
+				const coordinates = (feature.geometry as any).coordinates as [number, number];
 
-				const html = `
-					<div style="font-family: system-ui, sans-serif; font-size: 12px;">
-						<h3 style="margin: 0 0 4px; font-size: 14px;">${stop_name}</h3>
-						<div><strong>Stop ID:</strong> ${stop_id}</div>
-						<div><strong>Parent station:</strong> ${parent_station || "-"}</div>
-						<div><strong>Routes:</strong> ${routes || "-"}</div>
-						<div><strong>Agency:</strong> ${agency_name}</div>
-					</div>
-				`;
+				if (!popupContainerRef.current) {
+					popupContainerRef.current = document.createElement("div");
+					popupRootRef.current = createRoot(popupContainerRef.current);
+				}
 
-				const popup = new maptilersdk.Popup({
-					closeButton: true,
-					closeOnClick: true,
-					offset: 8
-				})
-					.setLngLat(coordinates as [number, number])
-					.setHTML(html)
+				popupRootRef.current!.render(<StopPopup stop={stop} />);
+
+				if (!popupRef.current) {
+					popupRef.current = new maptilersdk.Popup({
+						closeOnClick: true, 
+						offset: 8
+					});
+				}
+
+				popupRef.current
+					.setLngLat(coordinates)
+					.setDOMContent(popupContainerRef.current)
 					.addTo(map);
-
-				popupRef.current = popup;
 			});
 		});
 
 		mapInstance.current = map;
 
 		return () => {
+			if (popupRef.current) {
+				popupRef.current.remove();
+				popupRef.current = null;
+			}
+			if (popupRootRef.current) {
+				popupRootRef.current.unmount();
+				popupRootRef.current = null;
+				popupContainerRef.current = null;
+			}
 			map.remove();
 			mapInstance.current = null;
 		};
