@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import { createRoot } from "react-dom/client";
 import { StopPopup } from "../components/StopPopup";
-import type { StopProps } from "../components/StopPopup";
+import type { StopProps } from "../types/stop";
 import type { Root } from "react-dom/client";
+import { fetchStopsGeoJson } from "../data/stops";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -30,6 +31,7 @@ export default function MtaeMap() {
 		/* Looks like this when its pulled
 		Routes: route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,geometry
 		Stops: "stop_id""stop_name""parent_station""routes""agency_name"
+
 		**/
 		map.on("load", async () => {
 			const routeData = await fetch("/data/mta-routes.geojson").then(res => res.json());
@@ -71,7 +73,7 @@ export default function MtaeMap() {
 				}
 			});
 
-			const stopData = await fetch("/data/mta-stops.geojson").then(res => res.json());
+			const stopData = await fetchStopsGeoJson();
 			console.log("Line example:", routeData.features[0].properties);
 			console.log("Stop example:", stopData.features[0].properties);
 

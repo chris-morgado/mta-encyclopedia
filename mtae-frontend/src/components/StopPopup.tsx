@@ -1,20 +1,8 @@
-export type StopProps = {
-    stop_id: string;
-    stop_name: string;
-    parent_station?: string;
-    routes?: StopRoute[];
-};
+import type { StopProps } from "../types/stop";
 
-export type StopRoute = {
-	route_short_name: string;
-	route_long_name: string;
-	route_color: string;      
-	route_text_color: string; 
-};
 export function StopPopup({ stop }: { stop: StopProps }) {
 	return (
 		<div className="relative">
-			
 			{/* Popup card */}
 			<div className="bg-[#050509] text-slate-100 rounded-xl shadow-xl px-3 py-2 min-w-[220px] max-w-[260px] text-xs
                             relative
