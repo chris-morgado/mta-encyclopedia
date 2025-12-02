@@ -36,43 +36,43 @@ export default function MtaeMap() {
 		**/
 		map.on("load", async () => {
 			const routeData = await fetchRoutesGeoJson();
-			console.log("Route example:", routeData.features[0].properties);
+			console.log("Route example:", routeData);
 
 			map.addSource("subway-lines", {
 				type: "geojson",
 				data: routeData,
 			});
 
-		map.addLayer({
-			id: "subway-colored-lines",
-			type: "line",
-			source: "subway-lines",
-			paint: {
-				"line-width": [
-					"interpolate",
-					["linear"],
-					["zoom"],
-					4, 0,
-					6, 1,
-					16, 3,
-					20, 7
-				],
-				"line-color": [
-					"case",
-					["has", "trunk_color"],
-					["get", "trunk_color"],
-					["get", "route_color"]
-				],
-				"line-offset": [
-					"interpolate",
-					["linear"],
-					["zoom"],
-					8, 0,
-					14, ["*", ["get", "offset_index"], 2],
-					18, ["*", ["get", "offset_index"], 4]
-				]
-			}
-		});
+			map.addLayer({
+				id: "subway-colored-lines",
+				type: "line",
+				source: "subway-lines",
+				paint: {
+					"line-width": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						4, 0,
+						6, 1,
+						16, 3,
+						20, 7
+					],
+					"line-color": [
+						"case",
+						["has", "trunk_color"],
+						["get", "trunk_color"],
+						["get", "route_color"]
+					],
+					"line-offset": [
+						"interpolate",
+						["linear"],
+						["zoom"],
+						8, 0,
+						14, ["*", ["get", "offset_index"], 2],
+						18, ["*", ["get", "offset_index"], 4]
+					]
+				}
+			});
 
 			const stopData = await fetchStopsGeoJson();
 			console.log("Stop example:", stopData.features[0].properties);
