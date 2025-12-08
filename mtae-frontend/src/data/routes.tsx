@@ -14,7 +14,7 @@ export async function fetchRoutesGeoJson(): Promise<RouteGeoJson> {
 function preprocessRoutes(raw: RouteGeoJson): RouteGeoJson {    
     // ISSUE: Many routes overlap exactly (e.g. E, F, M, R along Queens Blvd)
     // This makes it hard to see them individually on the map. They need to be offset slightly.
-    // This preprocessing assigns offsets based on route names (it's not perfect, since stretches like the J and Z don't need to be offsetted, but this shit i ).
+    // This preprocessing assigns offsets based on route names (it's not perfect, since stretches like the J and Z don't need to be offsetted, but this shit is hard).
     
     const processedFeatures: RouteFeature[] = [];
     

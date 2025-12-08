@@ -47,6 +47,13 @@ export default function MtaeMap() {
 					: f.geometry?.coordinates?.reduce((sum, line) => sum + line.length, 0),
 				geometries: f.geometry
 			})));
+
+			// for debugging stops
+			console.log("All stops:", stopData.features.map(f => ({
+				name: f.properties.stop_name,
+				routes: f.properties.routes,
+				type: f.geometry?.type
+			})))
 			
 			console.log("Route example:", routeData);
 

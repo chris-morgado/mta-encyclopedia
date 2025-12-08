@@ -12,6 +12,7 @@
   "dependencies": {
     "@maptiler/sdk": "^3.8.0",
     "@tailwindcss/vite": "^4.1.17",
+    "gtfs-to-geojson": "^3.8.4",
     "react": "^19.0.0-rc.1",
     "react-dom": "^19.0.0-rc.1",
     "react-router-dom": "^7.9.6",
