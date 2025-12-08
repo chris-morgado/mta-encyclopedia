@@ -36,6 +36,18 @@ export default function MtaeMap() {
 		**/
 		map.on("load", async () => {
 			const routeData = await fetchRoutesGeoJson();
+			const stopData = await fetchStopsGeoJson();
+			
+			// for debugging routes
+			console.log("All routes:", routeData.features.map(f => ({
+				name: f.properties?.route_short_name,
+				type: f.geometry?.type,
+				coordCount: f.geometry?.type === 'LineString' 
+					? f.geometry.coordinates.length 
+					: f.geometry?.coordinates?.reduce((sum, line) => sum + line.length, 0),
+				geometries: f.geometry
+			})));
+			
 			console.log("Route example:", routeData);
 
 			map.addSource("subway-lines", {
@@ -74,7 +86,6 @@ export default function MtaeMap() {
 				}
 			});
 
-			const stopData = await fetchStopsGeoJson();
 			console.log("Stop example:", stopData.features[0].properties);
 
 			map.addSource("subway-stops", {
