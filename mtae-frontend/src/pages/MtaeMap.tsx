@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import { createRoot } from "react-dom/client";
 import { StopPopup } from "../components/StopPopup";
@@ -6,6 +6,7 @@ import type { StopProps } from "../types/stop";
 import type { Root } from "react-dom/client";
 import { fetchStopsGeoJson } from "../data/stops";
 import { fetchRoutesGeoJson } from "../data/routes";
+import type { Feature } from "@maptiler/sdk";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -17,6 +18,11 @@ export default function MtaeMap() {
 	const popupRef = useRef<maptilersdk.Popup | null>(null);
 	const popupRootRef = useRef<Root | null>(null);
 	const popupContainerRef = useRef<HTMLDivElement | null>(null);
+const mapLoaded = useRef(false);
+
+	// UI state for settings
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [showBoroughBorders, setShowBoroughBorders] = useState(false);
 
 	useEffect(() => {
 		if (!mapContainer.current || mapInstance.current) return;
@@ -29,36 +35,13 @@ export default function MtaeMap() {
 			projection: "globe",
 		});
 
-		/* Looks like this when its pulled
-		Routes: route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,geometry
-		Stops: "stop_id""stop_name""parent_station""routes""agency_name"
-
-		**/
 		map.on("load", async () => {
+			mapLoaded.current = true;
+
 			const routeData = await fetchRoutesGeoJson();
 			const stopData = await fetchStopsGeoJson();
-			
-			// for debugging routes
-			console.log("All routes:", routeData.features.map(f => ({
-				name: f.properties?.route_short_name,
-				type: f.geometry?.type,
-				coordCount: f.geometry?.type === 'LineString' 
-					? f.geometry.coordinates.length 
-					: f.geometry?.coordinates?.reduce((sum, line) => sum + line.length, 0),
-				geometries: f.geometry
-			})));
 
-			// for debugging stops
-			console.log("All stops:", stopData.features.map(f => ({
-				name: f.properties.stop_name,
-				id: f.properties.stop_id,
-				platform_ids: f.properties.platform_ids,
-				routes: f.properties.routes,
-				type: f.geometry?.type
-			})).sort((a, b) => a.name.localeCompare(b.name)));
-			
-			console.log("Route example:", routeData);
-
+			// --- Subway routes ---
 			map.addSource("subway-lines", {
 				type: "geojson",
 				data: routeData,
@@ -95,6 +78,7 @@ export default function MtaeMap() {
 				}
 			});
 
+			// --- Subway stops ---
 			map.addSource("subway-stops", {
 				type: "geojson",
 				data: stopData
@@ -109,9 +93,9 @@ export default function MtaeMap() {
 						"interpolate",
 						["linear"],
 						["zoom"],
-						8, 0,  // at zoom 8 (far away), disappear
-						10, 2, // at zoom 10, radius 2
-						16, 5,   // at zoom 7, radius 10
+						8, 0,
+						10, 2,
+						16, 5,
 						20, 10
 					],
 					"circle-color": "#ffffff",
@@ -119,15 +103,57 @@ export default function MtaeMap() {
 						"interpolate",
 						["linear"],
 						["zoom"],
-						6, 0,  
-						10, 1.0,   
-						16, 1.5,   
+						6, 0,
+						10, 1.0,
+						16, 1.5,
 						20, 2.5
 					],
 					"circle-stroke-color": "#000000"
 				}
 			});
 
+			// --- Borough outlines (Queens & Brooklyn) ---
+			const boroughData: any = await fetch(
+				"https://raw.githubusercontent.com/dwillis/nyc-maps/master/boroughs.geojson"
+			).then(res => res.json());
+
+			const boroughGeoJson: any = {
+				type: "FeatureCollection",
+				features: boroughData.features
+			};
+
+			map.addSource("boroughs", {
+				type: "geojson",
+				data: boroughGeoJson,
+			});
+
+			map.addLayer({
+				id: "bk-outline",
+				type: "line",
+				source: "boroughs",
+				layout: {
+					visibility: "none", 
+				},
+				paint: {
+					"line-color": "#ffffffff",
+					"line-width": 2,
+				},
+			});
+
+			map.addLayer({
+				id: "bk-outline",
+				type: "fill",
+				source: "boroughs",
+				layout: {
+					visibility: "none", 
+				},
+				paint: {
+					"fill-color": "#ff0000ff",
+					"fill-opacity": 1.0,
+				},
+			});
+
+			// --- Stop popup interactions ---
 			map.on("mouseenter", "subway-stops-layer", () => {
 				map.getCanvas().style.cursor = "pointer";
 			});
@@ -167,7 +193,7 @@ export default function MtaeMap() {
 
 				if (!popupRef.current) {
 					popupRef.current = new maptilersdk.Popup({
-						closeOnClick: true, 
+						closeOnClick: true,
 						offset: 8
 					});
 				}
@@ -193,69 +219,96 @@ export default function MtaeMap() {
 			}
 			map.remove();
 			mapInstance.current = null;
+			mapLoaded.current = false;
 		};
 	}, []);
 
-	return <div ref={mapContainer} className="map-root" />;
+	useEffect(() => {
+		const map = mapInstance.current;
+		if (!map || !mapLoaded.current) return;
+
+		const visibility = showBoroughBorders ? "visible" : "none";
+		["bk-outline", "queens-outline"].forEach((id) => {
+			if (map.getLayer(id)) {
+				map.setLayoutProperty(id, "visibility", visibility);
+			}
+		});
+	}, [showBoroughBorders]);
+
+	return (
+		<div className="relative h-full w-full">
+			{/* Map container */}
+			<div ref={mapContainer} className="map-root h-full w-full" />
+
+			{/* Map settings UI (overlay) */}
+			<div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-col gap-2">
+				{/* Floating icon button */}
+				<button
+					type="button"
+					onClick={() => setSettingsOpen((v) => !v)}
+					className="
+						pointer-events-auto flex items-center justify-center
+						h-10 w-10 rounded-full
+						bg-neutral-900/95 text-neutral-50
+						shadow-lg shadow-black/40 border border-neutral-700/70
+						hover:bg-neutral-800 active:scale-95
+						transition-transform transition-colors duration-150
+					"
+					aria-label="Map settings"
+				>
+					{/* simple gear icon */}
+					<span className="text-lg">⚙️</span>
+				</button>
+
+				{/* Expanded settings panel */}
+				{settingsOpen && (
+					<div
+						className="
+							pointer-events-auto mt-1
+							min-w-[220px]
+							rounded-2xl bg-neutral-900/95 text-neutral-100
+							border border-neutral-700/70
+							shadow-xl shadow-black/50
+							px-3 py-2.5 text-xs
+						"
+					>
+						<div className="mb-2 flex items-center justify-between">
+							<span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+								Map settings
+							</span>
+							<button
+								type="button"
+								onClick={() => setSettingsOpen(false)}
+								className="text-[11px] text-neutral-400 hover:text-neutral-200"
+							>
+								Close
+							</button>
+						</div>
+
+						<div className="space-y-2">
+							<label className="flex items-center justify-between gap-3">
+								<span className="text-[12px] text-neutral-200">
+									Borough borders
+								</span>
+								<input
+									type="checkbox"
+									className="h-4 w-4 cursor-pointer accent-neutral-300"
+									checked={showBoroughBorders}
+									onChange={(e) => setShowBoroughBorders(e.target.checked)}
+								/>
+							</label>
+
+							{/* place for future toggles */}
+							{/* <label className="flex items-center justify-between gap-3">
+								<span className="text-[12px] text-neutral-200">
+									Something else
+								</span>
+								<input type="checkbox" className="h-4 w-4 cursor-pointer accent-neutral-300" />
+							</label> */}
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }
-
-
-/*
-Borough code:
-			const boroughData: FeatureCollection = await fetch(
-				"https://raw.githubusercontent.com/dwillis/nyc-maps/master/boroughs.geojson"
-			).then(res => res.json());
-
-			const queensData: FeatureCollection = {
-				type: "FeatureCollection",
-				features: boroughData.features.filter(
-					(f: Feature) => (f.properties as any)?.BoroName === "Queens"
-				),
-			};
-
-			const bkData: FeatureCollection = {
-				type: "FeatureCollection",
-				features: boroughData.features.filter(
-					(f: Feature) => (f.properties as any)?.BoroName === "Brooklyn"
-				),
-			};
-
-			map.addSource("queens", {
-				type: "geojson",
-				data: queensData,
-			});
-
-			map.addSource("brooklyn", {
-				type: "geojson",
-				data: bkData,
-			});
-
-			// map.addLayer({
-			// 	id: "queens-fill",
-			// 	type: "fill",
-			// 	source: "queens",
-			// 	paint: {
-			// 		"fill-color": "#ff00aa",
-			// 		"fill-opacity": 0.4,
-			// 	},
-			// });
-
-			map.addLayer({
-				id: "bk-outline",
-				type: "line",
-				source: "brooklyn",
-				paint: {
-					"line-color": "#2600ffff",
-					"line-width": 2,
-				},
-			});
-			map.addLayer({
-				id: "queens-outline",
-				type: "line",
-				source: "queens",
-				paint: {
-					"line-color": "#ff00aa",
-					"line-width": 2,
-				},
-			});
-**/
