@@ -16,11 +16,6 @@ export function StopPopup({ stop }: { stop: StopProps }) {
                     <h3 className="m-0 text-sm font-semibold text-slate-50">
                         {stop.stop_name}
                     </h3>
-                    {stop.parent_station && (
-                        <p className="m-0 mt-0.5 text-[11px] text-slate-400">
-                            Parent station: {stop.parent_station}
-                        </p>
-                    )}
                 </div>
 
                 {/* Stop ID */}

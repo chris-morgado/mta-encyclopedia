@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+@theme {
+  --font-family-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
 html,
 body,
 #root {
@@ -42,4 +46,3 @@ body {
 .maplibregl-popup .maplibregl-popup-close-button {
   display: none !important;
 }
-
