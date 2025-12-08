@@ -1,5 +1,5 @@
-export type RouteFeature = GeoJSON.Feature<GeoJSON.LineString, any>;
-export type RouteGeoJson = GeoJSON.FeatureCollection<GeoJSON.LineString, any>;
+export type RouteFeature = GeoJSON.Feature<GeoJSON.MultiLineString | GeoJSON.LineString, any>;
+export type RouteGeoJson = GeoJSON.FeatureCollection<GeoJSON.MultiLineString | GeoJSON.LineString, any>;
 
 const ROUTES_URL = "/data/mta-routes.geojson";
 
@@ -8,53 +8,38 @@ export async function fetchRoutesGeoJson(): Promise<RouteGeoJson> {
     if (!res.ok) throw new Error("Failed to load routes GeoJSON");
     const raw = await res.json();
     const preprocessedData = preprocessRoutes(raw);
-    return raw;
+    return preprocessedData;
 }
 
-/**
- * Methodology:
- * 
- * 1: Find all lines that share multiple routes (same geometry)
- * Implementation: there will be a map. The key is a piece of stringified geometry, and the value is an array of features that all have that geometry.
- * 
- * 2: For each group of shared-geometry routes:
- *  a) If all routes have the same color, merge into one 'trunk' line with no offset
- *  b) If multiple colors (2+), create offset lines PER COLOR (not per route)
- */
-
-
-
-
-function preprocessRoutes(raw: RouteGeoJson): RouteGeoJson {
-	const routeGeoMap = new Map<string, RouteFeature[]>();
-                        //  ^ {stringified geometry : features} 
-
-    // making the map:                        
-    for (const feature of raw.features) {
-        /* each feature is a route
-            feature:
-            geometry: coords
-            properties: route info (color, title, etc...)
-        **/
-       	if (!feature.geometry || feature.geometry.type !== "LineString"){
-            continue;
-        } else {
-            const routeGeoMapKey = stringifyGeometry(feature.geometry.coordinates);
+function preprocessRoutes(raw: RouteGeoJson): RouteGeoJson {    
+    // ISSUE: Many routes overlap exactly (e.g. E, F, M, R along Queens Blvd)
+    // This makes it hard to see them individually on the map. They need to be offset slightly.
+    // This preprocessing assigns offsets based on route names (it's not perfect, since stretches like the J and Z don't need to be offsetted).
     
-            if (!routeGeoMap.has(routeGeoMapKey)) {
-                routeGeoMap.set(routeGeoMapKey, []);
+    const processedFeatures: RouteFeature[] = [];
+    
+    const routeNames = raw.features.map(f => f.properties?.route_short_name).filter(Boolean);
+    const uniqueRoutes = Array.from(new Set(routeNames)).sort();
+    
+    for (const feature of raw.features) {
+        if (!feature.geometry) continue;
+        
+        const routeName = feature.properties?.route_short_name;
+        const routeIndex = uniqueRoutes.indexOf(routeName);
+        
+        const offset = (routeIndex % 10) - 4.5; // Spreads routes between -4.5 and 4.5
+        
+        processedFeatures.push({
+            ...feature,
+            properties: {
+                ...feature.properties,
+                offset_index: offset * 0.3 // scale down offset.
             }
-            routeGeoMap.get(routeGeoMapKey)!.push(feature);
-        }
-
+        });
     }
-
-	return {
-		...raw,
-        features: raw.features,
-	};
-}
-
-function stringifyGeometry(geomtery: number[][]): string {
-    return JSON.stringify(geomtery);
+    
+    return {
+        type: "FeatureCollection",
+        features: processedFeatures,
+    };
 }
