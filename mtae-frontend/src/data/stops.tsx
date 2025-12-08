@@ -91,20 +91,12 @@ export function parseStopFeature(feature: StopFeature): StopProps {
 	};
 }
 
-export async function loadAllStops(): Promise<StopProps[]> {
-	const geo: StopGeoJson = await fetch("/data/mta-stops.geojson").then((res) =>
-		res.json()
-	);
-
-	return geo.features.map(parseStopFeature);
-}
-
 export async function loadStopById(id: string): Promise<StopProps | null> {
-	const geo: StopGeoJson = await fetch("/data/mta-stops.geojson").then((res) =>
+	const rawGeo: StopGeoJson = await fetch("/data/mta-stops.geojson").then((res) =>
 		res.json()
 	);
 
-	const feature = geo.features.find(
+	const feature = preprocessStops(rawGeo).features.find(
 		(f) => f.properties?.stop_id === id
 	);
 

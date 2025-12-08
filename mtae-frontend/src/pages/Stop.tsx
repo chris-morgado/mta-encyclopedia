@@ -34,7 +34,7 @@ export default function Stop() {
 			</div>
 		);
 	}
-
+	console.log("Stop data:", stop);
 	if (!stop) {
 		return (
 			<div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
