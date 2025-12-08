@@ -51,9 +51,11 @@ export default function MtaeMap() {
 			// for debugging stops
 			console.log("All stops:", stopData.features.map(f => ({
 				name: f.properties.stop_name,
+				id: f.properties.stop_id,
+				platform_ids: f.properties.platform_ids,
 				routes: f.properties.routes,
 				type: f.geometry?.type
-			})))
+			})).sort((a, b) => a.name.localeCompare(b.name)));
 			
 			console.log("Route example:", routeData);
 
@@ -92,8 +94,6 @@ export default function MtaeMap() {
 					]
 				}
 			});
-
-			console.log("Stop example:", stopData.features[0].properties);
 
 			map.addSource("subway-stops", {
 				type: "geojson",
@@ -153,8 +153,8 @@ export default function MtaeMap() {
 				const stop: StopProps = {
 					stop_id: props.stop_id,
 					stop_name: props.stop_name,
-					parent_station: props.parent_station,
 					routes,
+					platform_ids: props.platform_ids
 				};
 				const coordinates = (feature.geometry as any).coordinates as [number, number];
 

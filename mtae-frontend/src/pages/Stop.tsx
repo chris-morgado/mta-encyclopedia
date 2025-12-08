@@ -61,9 +61,9 @@ export default function Stop() {
 						<h1 className="text-2xl font-semibold">
 							{stop.stop_name}
 						</h1>
-						{stop.parent_station && (
+						{stop.platform_ids && (
 							<p className="text-sm text-slate-400">
-								Parent station: {stop.parent_station}
+								Platform IDs: {stop.platform_ids.join(", ")}
 							</p>
 						)}
 						<p className="text-xs text-slate-500 mt-1">

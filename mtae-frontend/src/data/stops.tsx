@@ -8,7 +8,56 @@ const STOPS_URL = "/data/mta-stops.geojson";
 export async function fetchStopsGeoJson(): Promise<StopGeoJson> {
 	const res = await fetch(STOPS_URL);
 	if (!res.ok) throw new Error("Failed to load stops GeoJSON");
-	return res.json();
+	const raw = await res.json();
+	return preprocessStops(raw);
+}
+
+function preprocessStops(raw: StopGeoJson): StopGeoJson {
+	const stationMap = new Map<string, StopFeature[]>();
+	
+	for (const feature of raw.features) {
+		const parentStation = feature.properties?.parent_station || feature.properties?.stop_id;
+		
+		if (!stationMap.has(parentStation)) {
+			stationMap.set(parentStation, []);
+		}
+		stationMap.get(parentStation)!.push(feature);
+	}
+	
+	const groupedFeatures: StopFeature[] = [];
+	
+	for (const [parentStation, platforms] of stationMap.entries()) {
+		const mainPlatform = platforms[0];
+		
+		const routeMap = new Map<string, any>();
+		const platformIds: string[] = [];
+		
+		for (const platform of platforms) {
+			platformIds.push(platform.properties.stop_id);
+			const routes: StopProps["routes"] = platform.properties.routes;
+			if (routes && Array.isArray(routes)) {
+				for (const route of routes) {
+					routeMap.set(route.route_short_name, route);
+				}
+			}
+		}
+		
+		groupedFeatures.push({
+			type: "Feature",
+			geometry: mainPlatform.geometry,
+			properties: {
+				stop_id: parentStation,
+				stop_name: mainPlatform.properties.stop_name,
+				routes: routeMap.size > 0 ? Array.from(routeMap.values()) : undefined,
+				platform_ids: JSON.stringify(platformIds),
+			}
+		});
+	}
+	
+	return {
+		type: "FeatureCollection",
+		features: groupedFeatures
+	};
 }
 
 export function parseStopFeature(feature: StopFeature): StopProps {
@@ -23,12 +72,22 @@ export function parseStopFeature(feature: StopFeature): StopProps {
 	} catch {
 		routes = undefined;
 	}
+	
+	let platformIds: string[] | undefined;
+	try {
+		platformIds =
+			typeof props.platform_ids === "string"
+				? JSON.parse(props.platform_ids)
+				: props.platform_ids;
+	} catch {
+		platformIds = undefined;
+	}
 
 	return {
 		stop_id: props.stop_id,
 		stop_name: props.stop_name,
-		parent_station: props.parent_station,
 		routes,
+		platform_ids: platformIds
 	};
 }
 

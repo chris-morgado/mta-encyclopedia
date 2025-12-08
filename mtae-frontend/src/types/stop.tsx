@@ -8,6 +8,6 @@ export type StopRoute = {
 export type StopProps = {
     stop_id: string;
     stop_name: string;
-    parent_station?: string;
     routes?: StopRoute[];
+    platform_ids?: string[];
 };
