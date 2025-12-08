@@ -6,7 +6,6 @@ import type { StopProps } from "../types/stop";
 import type { Root } from "react-dom/client";
 import { fetchStopsGeoJson } from "../data/stops";
 import { fetchRoutesGeoJson } from "../data/routes";
-import type { Feature } from "@maptiler/sdk";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -18,7 +17,7 @@ export default function MtaeMap() {
 	const popupRef = useRef<maptilersdk.Popup | null>(null);
 	const popupRootRef = useRef<Root | null>(null);
 	const popupContainerRef = useRef<HTMLDivElement | null>(null);
-const mapLoaded = useRef(false);
+	const mapLoaded = useRef(false);
 
 	// UI state for settings
 	const [settingsOpen, setSettingsOpen] = useState(false);
@@ -112,7 +111,6 @@ const mapLoaded = useRef(false);
 				}
 			});
 
-			// --- Borough outlines (Queens & Brooklyn) ---
 			const boroughData: any = await fetch(
 				"https://raw.githubusercontent.com/dwillis/nyc-maps/master/boroughs.geojson"
 			).then(res => res.json());
@@ -242,7 +240,6 @@ const mapLoaded = useRef(false);
 
 			{/* Map settings UI (overlay) */}
 			<div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-col gap-2">
-				{/* Floating icon button */}
 				<button
 					type="button"
 					onClick={() => setSettingsOpen((v) => !v)}
@@ -256,7 +253,21 @@ const mapLoaded = useRef(false);
 					"
 					aria-label="Map settings"
 				>
-					{/* simple gear icon */}
+					<span className="text-lg">🗺️</span>
+				</button>
+				<button
+					type="button"
+					onClick={() => setSettingsOpen((v) => !v)}
+					className="
+						pointer-events-auto flex items-center justify-center
+						h-10 w-10 rounded-full
+						bg-neutral-900/95 text-neutral-50
+						shadow-lg shadow-black/40 border border-neutral-700/70
+						hover:bg-neutral-800 active:scale-95
+						transition-transform transition-colors duration-150
+					"
+					aria-label="Map settings"
+				>
 					<span className="text-lg">⚙️</span>
 				</button>
 
