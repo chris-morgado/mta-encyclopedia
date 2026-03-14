@@ -1,0 +1,14 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "mtae-backend"
+resolve_s3 = true
+s3_prefix = "mtae-backend"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "UserPoolId=\"us-east-1_6ePq29lmA\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"

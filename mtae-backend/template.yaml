@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: MTA Encyclopedia Backend
+
+Parameters:
+  UserPoolId:
+    Type: String
+    Default: us-east-1_6ePq29lmA
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        TABLE_NAME: UserProfiles
+
+Resources:
+
+  # API Gateway, w/ Cognito Authorizer
+  MtaeApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}'
+
+  # Favorite Stops Lambda 
+  GetFavoriteStopsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/functions/getFavoriteStops.handler
+      Events:
+        GetFavorites:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MtaeApi
+            Path: /profile/favorites
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: UserProfiles
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/functions/getFavoriteStops.ts
+
+  UpdateFavoriteStopsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/functions/updateFavoriteStops.handler
+      Events:
+        UpdateFavorites:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MtaeApi
+            Path: /profile/favorites
+            Method: PUT
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: UserProfiles
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/functions/updateFavoriteStops.ts
+
+# Outputs:
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${MtaeApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
