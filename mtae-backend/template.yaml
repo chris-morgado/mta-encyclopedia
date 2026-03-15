@@ -35,6 +35,52 @@ Resources:
           CognitoAuthorizer:
             UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}'
 
+  GetProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/functions/getProfile.handler
+      Events:
+        GetProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MtaeApi
+            Path: /profile
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: user_profiles
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/functions/getProfile.ts
+
+  UpdateProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/functions/updateProfile.handler
+      Events:
+        UpdateProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MtaeApi
+            Path: /profile
+            Method: PUT
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: user_profiles
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/functions/updateProfile.ts
+
   # Favorite Stops Lambda 
   GetFavoriteStopsFunction:
     Type: AWS::Serverless::Function
