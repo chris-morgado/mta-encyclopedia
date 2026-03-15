@@ -1,16 +1,27 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useRef } from 'react';
-import { CognitoUser, CognitoUserSession, AuthenticationDetails,
-         CognitoUserAttribute } from 'amazon-cognito-identity-js';
+import {
+  CognitoUser, CognitoUserSession, AuthenticationDetails,
+  CognitoUserAttribute
+} from 'amazon-cognito-identity-js';
 import { userPool } from '../lib/cognito';
 
 interface AuthContextType {
+  // state
+  getToken: () => string | null;
   isAuthenticated: boolean;
   userEmail: string | null;
-  getToken: () => string | null;
+
+  // authentication actions
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   confirmSignUp: (code: string) => Promise<void>;
+
+  // profile management actions
+  updateDisplayName: (name: string) => Promise<void>;
+  changeEmail: (newEmail: string) => Promise<void>;
+  verifyEmailChange: (code: string) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -26,12 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
         if (!err && sess.isValid()) {
           setSession(sess);
-          setUserEmail(cognitoUser.getUsername());
+          setUserEmail(sess.getIdToken().payload.email);
         }
       });
     }
   }, []);
-    // Restores session on page load
+  // Restores session on page load
 
   const login = (email: string, password: string) =>
     new Promise<void>((resolve, reject) => {
@@ -75,6 +86,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getToken = () => session?.getIdToken().getJwtToken() ?? null;
 
+  const updateDisplayName = (name: string) =>
+    new Promise<void>((resolve, reject) => {
+      const cognitoUser = userPool.getCurrentUser();
+      if (!cognitoUser) return reject(new Error('No user logged in'));
+      cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
+        if (err || !sess.isValid()) return reject(new Error('Session invalid'));
+        const attribute = new CognitoUserAttribute({ Name: 'preferred_username', Value: name });
+        cognitoUser.updateAttributes([attribute], (err) => {
+          if (err) reject(err); else resolve();
+        });
+      });
+    });
+
+  const changeEmail = (newEmail: string) =>
+    new Promise<void>((resolve, reject) => {
+      const cognitoUser = userPool.getCurrentUser();
+      if (!cognitoUser) return reject(new Error('No user logged in'));
+      cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
+        if (err || !sess.isValid()) return reject(new Error('Session invalid'));
+        cognitoUser.updateAttributes([new CognitoUserAttribute({ Name: 'email', Value: newEmail })], (err) => {
+          if (err) reject(err); else resolve();
+        });
+      });
+    });
+
+  const verifyEmailChange = (code: string) =>
+    new Promise<void>((resolve, reject) => {
+      const cognitoUser = userPool.getCurrentUser();
+      if (!cognitoUser) return reject(new Error('No user logged in'));
+      cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
+        if (err || !sess.isValid()) return reject(new Error('Session invalid'));
+        cognitoUser.verifyAttribute('email', code, {
+          onSuccess: () => resolve(),
+          onFailure: reject,
+        });
+      });
+    });
+
+  const changePassword = (oldPassword: string, newPassword: string) =>
+    new Promise<void>((resolve, reject) => {
+      const cognitoUser = userPool.getCurrentUser();
+      if (!cognitoUser) return reject(new Error('No user logged in'));
+      cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
+        if (err || !sess.isValid()) return reject(new Error('Session invalid'));
+        cognitoUser.changePassword(oldPassword, newPassword, (err) => {
+          if (err) reject(err); else resolve();
+        });
+      });
+    });
+
+
   return (
     <AuthContext.Provider value={{
       isAuthenticated: !!session,
@@ -84,6 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       signUp,
       confirmSignUp,
+      updateDisplayName,
+      changeEmail,
+      verifyEmailChange,
+      changePassword
     }}>
       {children}
     </AuthContext.Provider>

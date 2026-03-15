@@ -10,8 +10,23 @@ gtfs-to-geojson --configPath ./gtfs-rstops-config.json
 ```
 
 ## Layout:
-### Frontend:
-mtae-frontend/src/
+### Backend (mtae-backend/):
+samconfig.toml              TODO
+template.yaml               TODO
+src/
+└── functions/
+    └── getProfile.ts       (Lambda: endpoint for getting public profile data)
+    └── updateProfile.ts    (Lambda: endpoint for updating public profile data)
+    └── getFavoriteStops.ts (Lambda: endpoint for getting data on a users favorite stops)
+    └── updateFavoriteSt... (Lambda: endpoint for updating public profile data)
+
+### Frontend (mtae-frontend/):
+README.md                   (Frontend README.md, contains frontend specific documentation.)
+geojson/
+public/
+└── data/
+    └── TODO
+src/
 ├── App.tsx                 (Main routing component)
 ├── App.css                 (Tailwind + DaisyUI config)
 ├── main.tsx                (React entry point)
