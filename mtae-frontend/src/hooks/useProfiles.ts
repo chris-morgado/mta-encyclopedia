@@ -1,59 +1,67 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL;
+import { useAuth } from '../context/AuthContext';
+import type { ProfileProps } from '../types/profile';
 
-export function useProfiles() {
-    const { isAuthenticated, getToken } = useAuth();
-    const [profile, setProfile] = useState<{ displayName: string; } | null>(null);
-
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setProfile(null);
-            return;
-        }
+export function useProfiles(userId: string) {
+    const [profile, setProfile] = useState<ProfileProps | null>(null);
+    const { getToken } = useAuth();
+    
+    const fetchProfiles = async () => {
+        if (!API_URL) return;
         
-        const fetchProfiles = async () => {
-            const token = getToken();
-            if (!token || !API_URL) return;
-
-            try {
-                const res = await fetch(`${API_URL}/profile`, {
-                    headers: {Authorization: `Bearer ${token}`}
-                });
-                const data = await res.json();
-                setProfile({ displayName: data.displayName});
-            } catch (err) {
-                console.error('Failed to fetch profile:', err);
-            }
-        };
+        try {
+            const res = await fetch(`${API_URL}/profile/${userId}`);
+            const data = await res.json();
+            setProfile({
+                userId: data.userId,
+                displayName: data.displayName,
+                memberSince: data.memberSince ?? "",
+                favoriteStops: data.favoriteStops ?? [],
+                email: data.email, // TODO delete me, emails are not on public endpoints
+            });
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+        }
+    };
+    
+    useEffect(() => {
         fetchProfiles();
-    }, [isAuthenticated]);
-
+    }, [userId]);
+    
     const editDisplayName = useCallback(async (newName: string) => {
         const token = getToken();
-        if(!token || !API_URL) return;
+        if (!token || !API_URL) return;
 
         const currentDisplayName = profile?.displayName ?? "";
         console.log("current display name:", currentDisplayName, "new name:", newName);
         if(!currentDisplayName || !newName || currentDisplayName === newName) return;
         console.log("<VALID INPUT> editing display name to", newName);
 
-        setProfile({ displayName: newName });
+        // optimistic update
+        setProfile(prev => prev ? { ...prev, 
+            displayName: newName,
+            // TODO add more things that can be changed... 
+        } : prev);
 
         try {
             await fetch(`${API_URL}/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({ displayName: newName }),
+                body: JSON.stringify({ updatedDisplayName: newName }),
             });
         } catch (err) {
-            setProfile({ displayName: currentDisplayName });
+            // revert on error
+            setProfile(prev => prev ? { ...prev, 
+                displayName: currentDisplayName,
+                // TODO add more things that can be changed... (when reverting) 
+            } : prev);
             console.error('Failed to update display name:', err);
         }
-    }, [profile, getToken]);
+    }, [profile]);
 
     return { profile, editDisplayName };
 }
