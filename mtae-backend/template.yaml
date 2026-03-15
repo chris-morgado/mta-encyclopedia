@@ -15,7 +15,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        TABLE_NAME: UserProfiles
+        TABLE_NAME: user_profiles
 
 Resources:
 
@@ -30,6 +30,7 @@ Resources:
         AllowOrigin: "'*'"
       Auth:
         DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}'
@@ -48,7 +49,7 @@ Resources:
             Method: GET
       Policies:
         - DynamoDBReadPolicy:
-            TableName: UserProfiles
+            TableName: user_profiles
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -71,7 +72,7 @@ Resources:
             Method: PUT
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: UserProfiles
+            TableName: user_profiles
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

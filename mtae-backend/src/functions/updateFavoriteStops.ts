@@ -16,7 +16,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     const userId = event.requestContext.authorizer?.claims?.sub;
     if (!userId) {
-      return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) };
+      return { statusCode: 401, headers, body: JSON.stringify({ meassage: 'Unauthorized' }) };
     }
 
     const body = JSON.parse(event.body ?? '{}');

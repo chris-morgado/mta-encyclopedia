@@ -4,7 +4,6 @@ version = 0.1
 stack_name = "mtae-backend"
 resolve_s3 = true
 s3_prefix = "mtae-backend"
-region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 parameter_overrides = "UserPoolId=\"us-east-1_6ePq29lmA\""

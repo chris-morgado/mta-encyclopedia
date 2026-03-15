@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-const TABLE_NAME = "user_profiles";
+const TABLE_NAME = process.env.TABLE_NAME!;
 
 const headers = {
   'Content-Type': 'application/json',
