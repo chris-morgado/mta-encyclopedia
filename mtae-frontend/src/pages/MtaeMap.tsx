@@ -6,6 +6,8 @@ import type { StopProps } from "../types/stop";
 import type { Root } from "react-dom/client";
 import { fetchStopsGeoJson } from "../data/stops";
 import { fetchRoutesGeoJson } from "../data/routes";
+import { useAuth } from "../context/AuthContext";
+import { useFavorites } from "../hooks/useFavorites";
 
 const MAP_ID = "019ab24d-c7c5-7f0a-a22d-0a5b92404e5c"; // https://cloud.maptiler.com/maps/
 const API_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -18,6 +20,37 @@ export default function MtaeMap() {
 	const popupRootRef = useRef<Root | null>(null);
 	const popupContainerRef = useRef<HTMLDivElement | null>(null);
 	const mapLoaded = useRef(false);
+
+	// Track the currently open stop so we can re-render the popup when
+	// favorites change (e.g. after the user clicks the star)
+	const currentStopRef = useRef<StopProps | null>(null);
+
+	// Auth + favorites
+	const { isAuthenticated } = useAuth();
+	const { favorites, isFavorited, toggleFavorite, isFull } = useFavorites();
+
+	// Refs so the map's one-time click handler always reads fresh values
+	const isAuthRef = useRef(isAuthenticated);
+	const favRef = useRef({ isFavorited, toggleFavorite, isFull });
+
+	useEffect(() => { isAuthRef.current = isAuthenticated; }, [isAuthenticated]);
+	useEffect(() => { favRef.current = { isFavorited, toggleFavorite, isFull }; }, [favorites]);
+
+	// Re-render the open popup whenever favorites or auth state changes
+	useEffect(() => {
+		const stop = currentStopRef.current;
+		if (!stop || !popupRootRef.current) return;
+		popupRootRef.current.render(
+			<StopPopup
+				key={stop.stop_id}
+				stop={stop}
+				isAuthenticated={isAuthenticated}
+				isFavorited={isFavorited(stop.stop_id)}
+				isFull={isFull}
+				onToggleFavorite={toggleFavorite}
+			/>
+		);
+	}, [favorites, isAuthenticated]);
 
 	// UI state for settings
 	const [settingsOpen, setSettingsOpen] = useState(false);
@@ -182,17 +215,36 @@ export default function MtaeMap() {
 				};
 				const coordinates = (feature.geometry as any).coordinates as [number, number];
 
+				// Track the open stop so the favorites useEffect can re-render it
+				currentStopRef.current = stop;
+
 				if (!popupContainerRef.current) {
 					popupContainerRef.current = document.createElement("div");
 					popupRootRef.current = createRoot(popupContainerRef.current);
 				}
 
-				popupRootRef.current!.render(<StopPopup stop={stop} />);
+				// Read fresh values from refs — the closure would otherwise see stale state
+				const { isFavorited: isFav, toggleFavorite: toggle, isFull: full } = favRef.current;
+
+				console.log(`is a fave: ${isFav(stop.stop_id)}, is full: ${full}`);
+				popupRootRef.current!.render(
+					<StopPopup
+						key={stop.stop_id}
+						stop={stop}
+						isAuthenticated={isAuthRef.current}
+						isFavorited={isFav(stop.stop_id)}
+						isFull={full}
+						onToggleFavorite={toggle}
+					/>
+				);
 
 				if (!popupRef.current) {
 					popupRef.current = new maptilersdk.Popup({
 						closeOnClick: true,
 						offset: 8
+					});
+					popupRef.current.on("close", () => {
+						currentStopRef.current = null;
 					});
 				}
 
