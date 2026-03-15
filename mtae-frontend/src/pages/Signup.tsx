@@ -40,7 +40,7 @@ export default function Signup() {
     setError(null);
     setLoading(true);
     try {
-      await confirmSignUp(email, code);
+      await confirmSignUp(code);
       navigate('/login');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Confirmation failed');
