@@ -14,9 +14,10 @@ const headers = {
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const userId = event.requestContext.authorizer?.claims?.sub;
+        // get userid from path parameter (this endpoint is public and can't be authenticated via Cognito authorizer)
+        const userId = event.pathParameters?.userId;
         if (!userId) {
-            return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) };
+            return { statusCode: 400, headers, body: JSON.stringify({ message: 'userId path parameter is required' }) };
         }
 
         const result = await dynamo.send(new GetCommand({
@@ -27,7 +28,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ userId: result.Item?.userId ?? "", }),
+            body: JSON.stringify({ 
+                userId: result.Item?.userId ?? "", 
+                displayName: result.Item?.displayName ?? "",
+                favoriteStops: result.Item?.favoriteStops ?? [],
+                memberSince: result.Item?.createdAt ?? "",
+            }),
         };
     } catch (err) {
         console.error(err);

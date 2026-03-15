@@ -5,7 +5,7 @@ Description: MTA Encyclopedia Backend
 Parameters:
   UserPoolId:
     Type: String
-    Default: us-east-1_6ePq29lmA
+    Default: us-east-1_WgVikn28P
 
 Globals:
   Function:
@@ -44,8 +44,10 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MtaeApi
-            Path: /profile
+            Path: /profile/{userId}
             Method: GET
+            Auth:
+              Authorizer: NONE
       Policies:
         - DynamoDBReadPolicy:
             TableName: user_profiles
@@ -127,6 +129,25 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - src/functions/updateFavoriteStops.ts
+
+  # GatewayResponseDefault4XX:
+  #   Type: AWS::ApiGateway::GatewayResponse
+  #   Properties:
+  #     ResponseType: DEFAULT_4XX
+  #     RestApiId: !Ref MtaeApi
+  #     ResponseParameters:
+  #       gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+  #       gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
+  # GatewayResponseDefault5XX:
+  #   Type: AWS::ApiGateway::GatewayResponse
+  #   Properties:
+  #     ResponseType: DEFAULT_5XX
+  #     RestApiId: !Ref MtaeApi
+  #     ResponseParameters:
+  #       gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+  #       gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
 
 # Outputs:
 Outputs:

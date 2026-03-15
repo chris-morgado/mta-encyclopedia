@@ -6,7 +6,7 @@ resolve_s3 = true
 s3_prefix = "mtae-backend"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "UserPoolId=\"us-east-1_6ePq29lmA\""
+parameter_overrides = "UserPoolId=\"us-east-1_WgVikn28P\""
 image_repositories = []
 
 [default.global.parameters]

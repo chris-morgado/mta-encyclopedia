@@ -12,22 +12,40 @@ const headers = {
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
 
-// still developing
-// need to allow emails to be changed, currently its the unique identifier for users so it can't be changed, but ideally it should be
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    try {
+        // get userid from auth context
+        const userId = event.requestContext.authorizer?.claims?.sub;
+        if (!userId) {
+            return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) };
+        }
 
-// export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-//     try {
-//         // get userid from auth context
-//         const userId = event.requestContext.authorizer?.claims?.sub;
-//         if (!userId) {
-//             return { statusCode: 401, headers, body: JSON.stringify({ message: 'Unauthorized' }) };
-//         }
+        const body = JSON.parse(event.body ?? '{}');
 
-//         const body = JSON.parse(event.body ?? '{}');
+        // update fields (currently just display name)
+        const updatedDisplayName: string = body.updatedDisplayName;
+        if(!updatedDisplayName || typeof updatedDisplayName !== 'string') {
+            return { statusCode: 400, headers, body: JSON.stringify({ message: 'updatedDisplayName is required and must be a string' }) };
+        }
+        
+        await dynamo.send(new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { userId },
+            UpdateExpression: 'SET displayName = :name, updatedAt = :now, createdAt = if_not_exists(createdAt, :now)',
+            ExpressionAttributeValues: {
+                ':name': updatedDisplayName,
+                ':now': new Date().toISOString(),
+            }
+        }));
 
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ message: 'Display name updated successfully' }),
+        }
 
-//     } catch (err) {
-//         console.error(err);
-//         return { statusCode: 500, headers, body: JSON.stringify({ message: 'Internal server error' }) };
-//     }
-// }
+    } catch (err) {
+        console.error(err);
+        return { statusCode: 500, headers, body: JSON.stringify({ message: 'Internal server error' }) };
+    }
+}
