@@ -5,11 +5,12 @@ import type { ProfileProps } from '../types/profile';
 
 export function useProfiles(userId: string) {
     const [profile, setProfile] = useState<ProfileProps | null>(null);
+    const [loadingDynamo, setLoadingDynamo] = useState(true);
     const { getToken } = useAuth();
     
     const fetchProfiles = async () => {
         if (!API_URL) return;
-        
+        setLoadingDynamo(true);
         try {
             const res = await fetch(`${API_URL}/profile/${userId}`);
             const data = await res.json();
@@ -22,6 +23,8 @@ export function useProfiles(userId: string) {
             });
         } catch (err) {
             console.error('Failed to fetch profile:', err);
+        } finally { 
+            setLoadingDynamo(false);
         }
     };
     
@@ -61,7 +64,7 @@ export function useProfiles(userId: string) {
         }
     }, [profile]);
 
-    return { profile, updateDisplayName };
+    return { profile, updateDisplayName, loadingDynamo };
 }
 
 

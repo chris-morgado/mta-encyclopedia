@@ -130,25 +130,6 @@ Resources:
         EntryPoints:
           - src/functions/updateFavoriteStops.ts
 
-  # GatewayResponseDefault4XX:
-  #   Type: AWS::ApiGateway::GatewayResponse
-  #   Properties:
-  #     ResponseType: DEFAULT_4XX
-  #     RestApiId: !Ref MtaeApi
-  #     ResponseParameters:
-  #       gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-  #       gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
-
-  # GatewayResponseDefault5XX:
-  #   Type: AWS::ApiGateway::GatewayResponse
-  #   Properties:
-  #     ResponseType: DEFAULT_5XX
-  #     RestApiId: !Ref MtaeApi
-  #     ResponseParameters:
-  #       gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-  #       gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
-
-
 # Outputs:
 Outputs:
   ApiUrl:
