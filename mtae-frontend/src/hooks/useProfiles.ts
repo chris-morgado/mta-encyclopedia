@@ -29,14 +29,12 @@ export function useProfiles(userId: string) {
         fetchProfiles();
     }, [userId]);
     
-    const editDisplayName = useCallback(async (newName: string) => {
+    const updateDisplayName = useCallback(async (newName: string) => {
         const token = getToken();
         if (!token || !API_URL) return;
 
         const currentDisplayName = profile?.displayName ?? "";
-        console.log("current display name:", currentDisplayName, "new name:", newName);
-        if(!currentDisplayName || !newName || currentDisplayName === newName) return;
-        console.log("<VALID INPUT> editing display name to", newName);
+        if(!newName || currentDisplayName === newName) return;
 
         // optimistic update
         setProfile(prev => prev ? { ...prev, 
@@ -63,7 +61,7 @@ export function useProfiles(userId: string) {
         }
     }, [profile]);
 
-    return { profile, editDisplayName };
+    return { profile, updateDisplayName };
 }
 
 

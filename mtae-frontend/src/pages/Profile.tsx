@@ -7,8 +7,8 @@ import type { StopProps } from "../types/stop";
 
 export default function Profile() {
     const { userId } = useParams<{ userId: string }>();
-    const { isAuthenticated, userEmail, getToken, updateDisplayName } = useAuth();
-    const { profile, editDisplayName } = useProfiles(userId!);
+    const { isAuthenticated, userEmail, getToken, updatePreferredUsername } = useAuth();
+    const { profile, updateDisplayName } = useProfiles(userId!);
 
     const [favoriteStops, setFavoriteStops] = useState<(StopProps | null)[]>([]);
     const [editing, setEditing] = useState(false);
@@ -45,8 +45,8 @@ export default function Profile() {
         setSaving(true);
         setSaveError(null);
         try {
-            await editDisplayName(editName.trim());
             await updateDisplayName(editName.trim());
+            await updatePreferredUsername(editName.trim());
             setEditing(false);
         } catch (err: unknown) {
             setSaveError(err instanceof Error ? err.message : 'Failed to save');
@@ -60,7 +60,7 @@ export default function Profile() {
         setSaveError(null);
     };
 
-    if (!profile || !profile.displayName) {
+    if (!profile) {
         return (
             <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
                 <div className="text-center">

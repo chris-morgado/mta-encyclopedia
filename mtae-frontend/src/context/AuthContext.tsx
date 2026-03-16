@@ -18,7 +18,7 @@ interface AuthContextType {
   confirmSignUp: (code: string) => Promise<void>;
 
   // profile management actions
-  updateDisplayName: (name: string) => Promise<void>;
+  updatePreferredUsername: (name: string) => Promise<void>;
   changeEmail: (newEmail: string) => Promise<void>;
   verifyEmailChange: (code: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -86,8 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getToken = () => session?.getIdToken().getJwtToken() ?? null;
 
-  const updateDisplayName = (name: string) =>
+  const updatePreferredUsername = (name: string) =>
     new Promise<void>((resolve, reject) => {
+      console.log("Attempting to update preferred username to", name);
       const cognitoUser = userPool.getCurrentUser();
       if (!cognitoUser) return reject(new Error('No user logged in'));
       cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
@@ -146,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       signUp,
       confirmSignUp,
-      updateDisplayName,
+      updatePreferredUsername,
       changeEmail,
       verifyEmailChange,
       changePassword
