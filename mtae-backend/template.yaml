@@ -10,9 +10,10 @@ Parameters:
 Globals:
   Function:
     Timeout: 10
-    Runtime: nodejs20.x
+    Runtime: python3.13
     Architectures:
       - x86_64
+    CodeUri: src/lambdas/
     Environment:
       Variables:
         TABLE_NAME: user_profiles
@@ -35,10 +36,28 @@ Resources:
           CognitoAuthorizer:
             UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}'
 
+  GatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseType: DEFAULT_4XX
+      RestApiId: !Ref MtaeApi
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
+  GatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseType: DEFAULT_5XX
+      RestApiId: !Ref MtaeApi
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+
   GetProfileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/functions/getProfile.handler
+      Handler: get_profile.handler
       Events:
         GetProfile:
           Type: Api
@@ -51,19 +70,11 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: user_profiles
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-          - src/functions/getProfile.ts
 
   UpdateProfileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/functions/updateProfile.handler
+      Handler: update_profile.handler
       Events:
         UpdateProfile:
           Type: Api
@@ -74,20 +85,12 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: user_profiles
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-          - src/functions/updateProfile.ts
 
-  # Favorite Stops Lambda 
+  # Favorite Stops Lambdas
   GetFavoriteStopsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/functions/getFavoriteStops.handler
+      Handler: get_favorite_stops.handler
       Events:
         GetFavorites:
           Type: Api
@@ -98,19 +101,11 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: user_profiles
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-          - src/functions/getFavoriteStops.ts
 
   UpdateFavoriteStopsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/functions/updateFavoriteStops.handler
+      Handler: update_favorite_stops.handler
       Events:
         UpdateFavorites:
           Type: Api
@@ -121,16 +116,7 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: user_profiles
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-          - src/functions/updateFavoriteStops.ts
 
-# Outputs:
 Outputs:
   ApiUrl:
     Description: API Gateway endpoint URL
