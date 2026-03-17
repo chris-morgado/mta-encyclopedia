@@ -13,6 +13,11 @@ export function useProfiles(userId: string) {
         setLoadingDynamo(true);
         try {
             const res = await fetch(`${API_URL}/profile/${userId}`);
+            if(res.status === 404) {
+                console.error('Status 404: Profile not found');
+                setProfile(null);
+                return;
+            }   
             const data = await res.json();
             setProfile({
                 userId: data.userId,

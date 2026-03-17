@@ -88,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePreferredUsername = (name: string) =>
     new Promise<void>((resolve, reject) => {
-      console.log("Attempting to update preferred username to", name);
       const cognitoUser = userPool.getCurrentUser();
       if (!cognitoUser) return reject(new Error('No user logged in'));
       cognitoUser.getSession((err: Error | null, sess: CognitoUserSession) => {
